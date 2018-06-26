@@ -1,24 +1,32 @@
-# README
+# Issue when searching a serialized field with Arel
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+When serializing a field, I cannot use Arel to filter it's results:
 
-Things you may want to cover:
+```ruby
+class User < ApplicationRecord
+  serialize :settings, Array
 
-* Ruby version
+  class << self
+    def search_by_settings(settings)
+      query = user_table[:settings].matches_any serialize_settings(settings)
+      User.where query
+    end
+    # ...
+  end
+end
 
-* System dependencies
+# ... in console
+User.create name: "Mike", settings: [1, 2, 3]
+# Ok
+User.search_by_settings [1]
+# This raises an exception
+ActiveRecord::SerializationTypeMismatch: Attribute was supposed to be a Array, but was a String. -- "% 1\n%"
+```
 
-* Configuration
+This seemed to just work with Rails 4.x but I can't seem to find any related
+documentation on what changed, if any. Maybe it was working because of a bug or
+something?
 
-* Database creation
+If I remove the serialization, it won't raise the exception.
 
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+You can see the full model at [here](app/models/user.rb).
